@@ -1,0 +1,16 @@
+{
+  "name": "in-memory-db",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "clone-deep": "^4.0.1",
+    "express": "^4.16.4",
+    "lodash": "^4.17.11"
+  }
+}
