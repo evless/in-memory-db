@@ -4,13 +4,14 @@ const SECOND = 1000;
 module.exports = function(options = {}) {
     const ttl = options.ttl || 0; // in seconds
     const maxValues = options.maxValues || 0;
-    const data = {};
+    const data = new Map();
 
-    this._getAllData = () => data;
+    this._getAllData = () => [...data.entries()];
 
     this.check = (params) => {
-        const item = data[paramsToString(params)];
-        if (item) {
+        const key = paramsToString(params)
+        if (data.has(key)) {
+            const item = data.get(key);
             if (ttl > 0) {
                 if (item.endTime > Date.now()) {
                     return true;
@@ -28,7 +29,7 @@ module.exports = function(options = {}) {
     this.get = (params) => {
         if (this.check(params)) {
             this.incrementCounter(params);
-            return data[paramsToString(params)].value;
+            return data.get(paramsToString(params)).value;
         }
     
         return;
@@ -39,23 +40,39 @@ module.exports = function(options = {}) {
             this.findAndRemoveSmallCounter();
         }
 
-        data[paramsToString(params)] = {
+        data.set(paramsToString(params), {
             value,
             counter: 1,
             endTime: ttl > 0 ? Date.now() + ttl * SECOND : 0,
-        };
+        });
     }
 
-    this.incrementCounter = (params) => this.check(params) && (data[paramsToString(params)].counter++)
+    this.incrementCounter = (params) => {
+        if (this.check(params)) {
+            const key = paramsToString(params);
+            const item = data.get(key);
+            item.counter++;
+            data.set(key, item)
+        }
+    }
 
-    this.remove = (params) => delete data[paramsToString(params)]
+    this.remove = (params) => data.delete(paramsToString(params))
 
     this.findAndRemoveSmallCounter = () => {
-        const keys = Object.keys(data);
+        let removeKey = null;
+        let minCounter = null;
 
-        const key = keys.sort((keyA, keyB) => data[keyA].counter > data[keyB].counter)[0]
+        data.forEach((val, key) => {
+            if (!minCounter) {
+                minCounter = val.counter;
+            }
 
-        this.remove(key)
+            if (val.counter <= minCounter) {
+                removeKey = key;
+            }
+        });
+
+        this.remove(removeKey)
     }
 
     this.startTimer = () => {
@@ -66,9 +83,7 @@ module.exports = function(options = {}) {
         clearTimeout(this.timerID);
 
         this.timerID = setTimeout(() => {
-            const keys = Object.keys(data);
-
-            keys.forEach(key => {
+            data.forEach((val, key) => {
                 if (! this.check(key)) {
                     this.remove(key)
                 }

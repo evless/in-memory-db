@@ -1005,7 +1005,7 @@ const data = [
 
 const db = cloneDeep(data);
 
-const getRandomTime = () => Math.floor(Math.random() * 4000) + 2000
+const getRandomTime = (max = 1500, min = 500) => Math.floor(Math.random() * (max - min)) + min
 
 const promise = (result) => new Promise((resolve, reject) => {
     setTimeout(() => {
