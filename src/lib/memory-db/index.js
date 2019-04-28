@@ -1,4 +1,11 @@
-const paramsToString = (params) => typeof params === 'string' ? params : JSON.stringify(params)
+const hash = (params) => {
+    const string = typeof params === 'string' ? params : JSON.stringify(params)
+
+    return string
+        .split('')
+        .map(letter => letter.charCodeAt())
+        .reduce((prev, curr) => prev + curr, 0)
+}
 const SECOND = 1000;
 
 module.exports = function(options = {}) {
@@ -8,8 +15,7 @@ module.exports = function(options = {}) {
 
     this._getAllData = () => [...data.entries()];
 
-    this.check = (params) => {
-        const key = paramsToString(params)
+    this.check = (key) => {
         if (data.has(key)) {
             const item = data.get(key);
             if (ttl > 0) {
@@ -27,9 +33,11 @@ module.exports = function(options = {}) {
     }
 
     this.get = (params) => {
-        if (this.check(params)) {
-            this.incrementCounter(params);
-            return data.get(paramsToString(params)).value;
+        const key = hash(params);
+
+        if (this.check(key)) {
+            this.incrementCounter(key);
+            return data.get(key).value;
         }
     
         return;
@@ -40,23 +48,20 @@ module.exports = function(options = {}) {
             this.findAndRemoveSmallCounter();
         }
 
-        data.set(paramsToString(params), {
+        data.set(hash(params), {
             value,
             counter: 1,
             endTime: ttl > 0 ? Date.now() + ttl * SECOND : 0,
         });
     }
 
-    this.incrementCounter = (params) => {
-        if (this.check(params)) {
-            const key = paramsToString(params);
-            const item = data.get(key);
-            item.counter++;
-            data.set(key, item)
-        }
+    this.incrementCounter = (key) => {
+        const item = data.get(key);
+        item.counter++;
+        data.set(key, item)
     }
 
-    this.remove = (params) => data.delete(paramsToString(params))
+    this.remove = (key) => data.delete(key)
 
     this.findAndRemoveSmallCounter = () => {
         let removeKey = null;

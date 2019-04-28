@@ -71,7 +71,7 @@ app.get('/items', async function(req, res) {
 app.get('/item/:id', async function(req, res) {
     const startTime = Date.now();
     const id = req.params.id;
-    const cache = memory.get(id);
+    const cache = memory.get(req.params);
 
     if (cache) {
         return res.send(parseResult(FROM_CACHE, cache, startTime))
@@ -81,7 +81,7 @@ app.get('/item/:id', async function(req, res) {
     if (!result) {
         res.send(NOT_FOUND)
     } else {
-        memory.set(id, result);
+        memory.set(req.params, result);
         res.send(parseResult(FROM_DB, result, startTime));
     }
 });
